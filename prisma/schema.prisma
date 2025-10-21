@@ -75,6 +75,13 @@ enum TreatmentStepStatus {
   OTHER
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELED
+  OTHER
+}
+
 model Specialization {
   id        String   @id @default(uuid())
   name      String
@@ -84,6 +91,13 @@ model Specialization {
 
   @@map("specializations")
   User User[]
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELED
+  OTHER
 }
 
 model User {
@@ -111,6 +125,8 @@ model User {
   created_treatments Treatment[] @relation(name: "created_by_treatment")
   treatment_steps TreatmentStep[] @relation(name: "doctor_treatment_step")
   created_treatment_steps TreatmentStep[] @relation(name: "created_by_treatment_step")
+  doctor_invoices Invoice[] @relation(name: "doctor_invoice")
+  created_invoices Invoice[] @relation(name: "created_by_invoice")
 }
 
 model Patient {
@@ -134,6 +150,7 @@ model Patient {
   PatientEmergencyContact PatientEmergencyContact[]
   Appointment Appointment[]
   Treatment Treatment[]
+  Invoice Invoice[] @relation(name: "patient_invoice")
 }
 
 model PatientEmergencyContact {
@@ -213,6 +230,8 @@ model Treatment {
   @@map("treatments")
 
   TreatmentStep TreatmentStep[]
+  
+  treatment_invoices Invoice[] @relation(name: "treatment_invoice")
 }
 
 model TreatmentStep {
@@ -239,4 +258,65 @@ model TreatmentStep {
   units String[]
 
   @@map("treatment_steps")
+  treatment_step_invoices Invoice[] @relation(name: "treatment_step_invoice")
+}
+
+
+model Invoice {
+  id        String   @id @default(uuid())
+  code String?
+  treatmentId String?
+  treatment Treatment? @relation(fields: [treatmentId], references: [id], name: "treatment_invoice")
+  treatmentStepId String?
+  treatmentStep TreatmentStep? @relation(fields: [treatmentStepId], references: [id], name: "treatment_step_invoice")
+  patientId String?
+  patient Patient? @relation(fields: [patientId], references: [id], name: "patient_invoice")
+  doctorId String?
+  doctor User? @relation(fields: [doctorId], references: [id], name: "doctor_invoice")
+  createdById String?
+  createdBy User? @relation(fields: [createdById], references: [id], name: "created_by_invoice")
+  createdAt DateTime @default(now())
+  totalAmount Decimal @default(0)
+  discount Decimal @default(0)
+  paidAmount Decimal @default(0)
+  paidAt DateTime?
+  paymentMethod PaymentMethod?
+  isPaid Boolean @default(false)
+  updatedAt DateTime @updatedAt
+  status InvoiceStatus @default(PENDING)
+  expiresAt DateTime?
+  currency String @default("USD")
+  currentPaymentAmount Decimal @default(0)
+
+  @@map("invoices")
+  InvoiceItem InvoiceItem[]
+  Payment Payment[]
+}
+
+model InvoiceItem {
+  id        String   @id @default(uuid())
+  invoiceId String?
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  name String
+  price Decimal
+  quantity Int
+  discount Decimal @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("invoice_items")
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  invoiceId String?
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  amount Decimal
+  paymentMethod PaymentMethod
+  paymentDate DateTime?
+  notes String? @db.Text
+  status PaymentStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("payments")
 }
