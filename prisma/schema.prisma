@@ -44,6 +44,14 @@ enum CivilStatus {
   OTHER
 }
 
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  COMPLETED
+  OTHER
+}
+
 model Specialization {
   id        String   @id @default(uuid())
   name      String
@@ -74,6 +82,8 @@ model User {
 
   @@map("users")
   Patient Patient[]
+  doctor_appointments Appointment[] @relation(name: "doctor_appointment")
+  created_appointments Appointment[] @relation(name: "created_by_appointment")
 }
 
 model Patient {
@@ -95,6 +105,7 @@ model Patient {
   updatedAt DateTime @updatedAt
   @@map("patients")
   PatientEmergencyContact PatientEmergencyContact[]
+  Appointment Appointment[]
 }
 
 model PatientEmergencyContact {
@@ -108,4 +119,36 @@ model PatientEmergencyContact {
   patient Patient @relation(fields: [patientId], references: [id])
 
   @@map("patient_emergency_contacts")
+}
+
+
+model AppointmentType {
+  id        String   @id @default(uuid())
+  name      String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("appointment_types")
+  Appointment Appointment[]
+}
+
+model Appointment {
+  id        String   @id @default(uuid())
+  dateTime DateTime
+  doctorId String?
+  doctor User? @relation(fields: [doctorId], references: [id], name: "doctor_appointment")
+  patientId String?
+  patient Patient? @relation(fields: [patientId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  status AppointmentStatus @default(PENDING)
+  appointmentTypeId String?
+  appointmentType AppointmentType? @relation(fields: [appointmentTypeId], references: [id])
+  durationMinutes Int @default(30)
+  notes String?
+  createdById String?
+  createdBy User? @relation(fields: [createdById], references: [id], name: "created_by_appointment")
+
+  @@map("appointments")
 }
