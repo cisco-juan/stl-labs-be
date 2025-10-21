@@ -52,6 +52,29 @@ enum AppointmentStatus {
   OTHER
 }
 
+enum TreatmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  COMPLETED
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  TRANSFER
+  OTHER
+}
+
+enum TreatmentStepStatus {
+  PENDING
+  COMPLETED
+  CANCELED
+  OTHER
+}
+
 model Specialization {
   id        String   @id @default(uuid())
   name      String
@@ -84,6 +107,10 @@ model User {
   Patient Patient[]
   doctor_appointments Appointment[] @relation(name: "doctor_appointment")
   created_appointments Appointment[] @relation(name: "created_by_appointment")
+  doctor_treatments Treatment[] @relation(name: "doctor_treatment")
+  created_treatments Treatment[] @relation(name: "created_by_treatment")
+  treatment_steps TreatmentStep[] @relation(name: "doctor_treatment_step")
+  created_treatment_steps TreatmentStep[] @relation(name: "created_by_treatment_step")
 }
 
 model Patient {
@@ -106,6 +133,7 @@ model Patient {
   @@map("patients")
   PatientEmergencyContact PatientEmergencyContact[]
   Appointment Appointment[]
+  Treatment Treatment[]
 }
 
 model PatientEmergencyContact {
@@ -149,6 +177,66 @@ model Appointment {
   notes String?
   createdById String?
   createdBy User? @relation(fields: [createdById], references: [id], name: "created_by_appointment")
+  treatmentId String?
 
   @@map("appointments")
+  Treatment Treatment[] @relation(name: "treatment_appointment")
+}
+
+model Treatment {
+  id        String   @id @default(uuid())
+  name      String
+  description String?
+  code String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  status TreatmentStatus @default(PENDING)
+  diagnosis String? @db.Text
+  startDate DateTime?
+  endDate DateTime?
+  treatment_appointments Appointment[] @relation(name: "treatment_appointment")
+  patientId String?
+  patient Patient? @relation(fields: [patientId], references: [id])
+  doctorId String?
+  doctor User? @relation(fields: [doctorId], references: [id], name: "doctor_treatment")
+  createdById String?
+  createdBy User? @relation(fields: [createdById], references: [id], name: "created_by_treatment")
+  notes String? @db.Text
+  totalSteps Int @default(0)
+  completedSteps Int @default(0)
+  price Decimal @default(0)
+  isPaid Boolean @default(false)
+  paymentDate DateTime?
+  paymentMethod PaymentMethod?
+  discount Decimal @default(0)
+
+  @@map("treatments")
+
+  TreatmentStep TreatmentStep[]
+}
+
+model TreatmentStep {
+  id        String   @id @default(uuid())
+  name      String
+  status TreatmentStepStatus @default(PENDING)
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  treatmentId String?
+  treatment Treatment? @relation(fields: [treatmentId], references: [id])
+  notes String? @db.Text
+  quantity Int @default(1)
+  price Decimal @default(0)
+  doctorId String?
+  isPaid Boolean @default(false)
+  paymentDate DateTime?
+  paymentMethod PaymentMethod?
+  discount Decimal @default(0)
+  order Int @default(0)
+  doctor User? @relation(fields: [doctorId], references: [id], name: "doctor_treatment_step")
+  createdById String?
+  createdBy User? @relation(fields: [createdById], references: [id], name: "created_by_treatment_step")
+  units String[]
+
+  @@map("treatment_steps")
 }
