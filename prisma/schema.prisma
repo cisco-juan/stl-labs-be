@@ -20,15 +20,28 @@ enum UserStatus {
   BLOCKED
 }
 
-model Role {
-  id        String   @id @default(uuid())
-  name      String
-  description String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum UserRole {
+  ADMIN
+  DOCTOR
+  NURSE
+  RECEPTIONIST
+  LAB_TECHNICIAN
+  PHARMACIST
+  OTHER
+}
 
-  @@map("roles")
-  User User[]
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum CivilStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  OTHER
 }
 
 model Specialization {
@@ -46,8 +59,8 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   fullName  String
-  roleId    String
-  role      Role     @relation(fields: [roleId], references: [id])
+  role      UserRole
+  gender    Gender
   password  String
   status    UserStatus @default(PENDING)
   phoneNumber String?
@@ -60,4 +73,39 @@ model User {
   specialization Specialization? @relation(fields: [specializationId], references: [id])
 
   @@map("users")
+  Patient Patient[]
+}
+
+model Patient {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  phoneNumber String?
+  dni String?
+  birthDate DateTime?
+  lastVisit DateTime?
+  civilStatus CivilStatus? @default(SINGLE)
+  profession String?
+  address String?
+  status    UserStatus @default(ACTIVE)
+  doctorId String?
+  gender    Gender
+  doctor User? @relation(fields: [doctorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("patients")
+  PatientEmergencyContact PatientEmergencyContact[]
+}
+
+model PatientEmergencyContact {
+  id        String   @id @default(uuid())
+  fullName  String
+  phoneNumber String
+  relationship String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  patientId String
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@map("patient_emergency_contacts")
 }
