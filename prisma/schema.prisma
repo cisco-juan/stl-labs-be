@@ -160,6 +160,43 @@ enum DniType {
   OTHER
 }
 
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  code      String?  @unique
+  address   String?
+  phoneNumber String?
+  email     String?
+  city      String?
+  country   String?
+  status    BranchStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("branches")
+  userBranches UserBranch[]
+  defaultForUsers User[] @relation(name: "default_branch")
+}
+
+model UserBranch {
+  id        String   @id @default(uuid())
+  userId    String
+  branchId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, branchId])
+  @@map("user_branches")
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -175,7 +212,9 @@ model User {
   dni String?
   address String?
   profilePictureUrl String?
+  defaultBranchId String?
   specialization Specialization? @relation(fields: [specializationId], references: [id])
+  defaultBranch Branch? @relation(fields: [defaultBranchId], references: [id], name: "default_branch")
 
   @@map("users")
   Patient Patient[]
@@ -188,6 +227,7 @@ model User {
   doctor_invoices Invoice[] @relation(name: "doctor_invoice")
   created_invoices Invoice[] @relation(name: "created_by_invoice")
   created_inventory_moves InventoryMovement[] @relation(name: "created_by_inventory_move")
+  userBranches UserBranch[]
 }
 
 model Patient {

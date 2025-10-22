@@ -56,6 +56,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       specialization: user.specialization?.name || null,
+      defaultBranchId: user.defaultBranchId || null,
     };
   }
 }

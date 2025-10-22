@@ -33,4 +33,11 @@ export class LoginResponseDto {
     nullable: true,
   })
   specialization: string | null;
+
+  @ApiProperty({
+    description: 'ID de la sucursal por defecto del usuario',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    nullable: true,
+  })
+  defaultBranchId: string | null;
 }

@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, UserStatus, Gender } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, Gender, BranchStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -8,6 +8,57 @@ async function main() {
 
   // Hash the admin password
   const hashedPassword = await bcrypt.hash('6366aaee36', 10);
+
+  // Create Branches
+  console.log('🏢 Creating branches...');
+  const branches = await Promise.all([
+    prisma.branch.upsert({
+      where: { id: 'branch-1' },
+      update: {},
+      create: {
+        id: 'branch-1',
+        name: 'Sucursal Principal',
+        code: 'MAIN',
+        address: 'Av. Principal 123',
+        phoneNumber: '+1234567890',
+        email: 'main@stl.com',
+        city: 'Ciudad Principal',
+        country: 'Perú',
+        status: BranchStatus.ACTIVE,
+      },
+    }),
+    prisma.branch.upsert({
+      where: { id: 'branch-2' },
+      update: {},
+      create: {
+        id: 'branch-2',
+        name: 'Sucursal Norte',
+        code: 'NORTH',
+        address: 'Av. Norte 456',
+        phoneNumber: '+1234567891',
+        email: 'north@stl.com',
+        city: 'Ciudad Norte',
+        country: 'Perú',
+        status: BranchStatus.ACTIVE,
+      },
+    }),
+    prisma.branch.upsert({
+      where: { id: 'branch-3' },
+      update: {},
+      create: {
+        id: 'branch-3',
+        name: 'Sucursal Sur',
+        code: 'SOUTH',
+        address: 'Av. Sur 789',
+        phoneNumber: '+1234567892',
+        email: 'south@stl.com',
+        city: 'Ciudad Sur',
+        country: 'Perú',
+        status: BranchStatus.ACTIVE,
+      },
+    }),
+  ]);
+  console.log(`✅ Created ${branches.length} branches`);
 
   // Create Specializations
   console.log('📋 Creating specializations...');
@@ -102,9 +153,29 @@ async function main() {
       phoneNumber: '+1234567890',
       dni: 'ADMIN001',
       address: 'STL Lab Headquarters',
+      defaultBranchId: 'branch-1',
     },
   });
   console.log(`✅ Created admin user: ${adminUser.email}`);
+
+  // Assign all branches to admin user (SUPERADMIN has access to all branches)
+  console.log('🔗 Assigning branches to admin user...');
+  for (const branch of branches) {
+    await prisma.userBranch.upsert({
+      where: {
+        userId_branchId: {
+          userId: adminUser.id,
+          branchId: branch.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: adminUser.id,
+        branchId: branch.id,
+      },
+    });
+  }
+  console.log(`✅ Assigned ${branches.length} branches to admin user`);
 
   // Create Appointment Types
   console.log('📅 Creating appointment types...');
