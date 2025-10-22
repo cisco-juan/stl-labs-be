@@ -153,6 +153,13 @@ enum InventoryAlertType {
   OTHER
 }
 
+enum DniType {
+  DNI
+  RUC
+  PASSPORT
+  OTHER
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -189,6 +196,7 @@ model Patient {
   email     String   @unique
   phoneNumber String?
   dni String?
+  dniType DniType?
   birthDate DateTime?
   lastVisit DateTime?
   civilStatus CivilStatus? @default(SINGLE)
