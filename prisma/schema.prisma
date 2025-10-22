@@ -18,6 +18,7 @@ enum UserStatus {
   INACTIVE
   PENDING
   BLOCKED
+  DELETED
 }
 
 enum UserRole {
@@ -27,6 +28,7 @@ enum UserRole {
   RECEPTIONIST
   LAB_TECHNICIAN
   PHARMACIST
+  SUPERADMIN
   OTHER
 }
 
@@ -57,6 +59,7 @@ enum TreatmentStatus {
   CONFIRMED
   CANCELED
   COMPLETED
+  DELETED
   OTHER
 }
 
@@ -72,6 +75,7 @@ enum TreatmentStepStatus {
   PENDING
   COMPLETED
   CANCELED
+  DELETED
   OTHER
 }
 
@@ -97,6 +101,55 @@ enum InvoiceStatus {
   PENDING
   PAID
   CANCELED
+  EXPIRED
+  DELETED
+  OTHER
+  OVERDUE
+}
+
+enum InventoryUnit {
+  UNIT
+  PAIR
+  BOX
+  OTHER
+}
+
+
+enum InventoryStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+  SOLD
+  LOST
+  DAMAGED
+  OTHER
+}
+
+enum InventoryMoveType {
+  PURCHASE
+  SALE
+  OUT
+  ADJUSTMENT
+  RETURN
+  WARRANTY
+  EXCHANGE
+  TRANSFER
+  REPAIR
+  DESTRUCTION
+  OTHER
+}
+
+enum InventoryMovementDocumentType {
+  INVOICE
+  RECEIPT
+  WARRANTY
+  OTHER
+}
+
+enum InventoryAlertType {
+  LOW_STOCK
+  OUT_OF_STOCK
+  DAMAGED
   OTHER
 }
 
@@ -127,6 +180,7 @@ model User {
   created_treatment_steps TreatmentStep[] @relation(name: "created_by_treatment_step")
   doctor_invoices Invoice[] @relation(name: "doctor_invoice")
   created_invoices Invoice[] @relation(name: "created_by_invoice")
+  created_inventory_moves InventoryMovement[] @relation(name: "created_by_inventory_move")
 }
 
 model Patient {
@@ -301,6 +355,10 @@ model InvoiceItem {
   price Decimal
   quantity Int
   discount Decimal @default(0)
+  isDeleted Boolean @default(false)
+  deletedAt DateTime?
+  inventoryId String?
+  inventory Inventory? @relation(fields: [inventoryId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -315,8 +373,120 @@ model Payment {
   paymentMethod PaymentMethod
   paymentDate DateTime?
   notes String? @db.Text
+  reference String?
   status PaymentStatus @default(PENDING)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@map("payments")
+}
+
+model Inventory {
+  id        String   @id @default(uuid())
+  code String?
+  name String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  price Decimal
+  quantity Int
+  soldPrice Decimal
+  unit InventoryUnit @default(UNIT)
+  status InventoryStatus @default(ACTIVE)
+  priceHistory PriceHistory[]
+  minStock Int @default(10)
+  maxStock Int @default(100)
+  categoryId String?
+  category InventoryCategory? @relation(fields: [categoryId], references: [id])
+  providerId String?
+  provider Provider? @relation(fields: [providerId], references: [id])
+  @@map("inventories")
+  InvoiceItem InvoiceItem[]
+  source_inventory_move InventoryMovement[] @relation(name: "source_inventory_move")
+  destination_inventory_move InventoryMovement[] @relation(name: "destination_inventory_move")
+  InventoryAlert InventoryAlert[]
+}
+
+model PriceHistory {
+  id        String   @id @default(uuid())
+  oldPrice Decimal
+  newPrice Decimal
+  changeDate DateTime
+  inventoryId String?
+  inventory Inventory? @relation(fields: [inventoryId], references: [id])
+  @@map("price_histories")
+}
+
+model InventoryCategory { 
+  id        String   @id @default(uuid())
+  name String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("inventory_categories")
+  Inventory Inventory[]
+}
+
+model Provider {
+  id        String   @id @default(uuid())
+  name String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  contactNumber String?
+  email String?
+  address String?
+  isActive Boolean @default(true)
+  @@map("providers")
+  
+  Inventory Inventory[]
+}
+
+
+model InventoryMovement{
+  id        String   @id @default(uuid())
+  type InventoryMoveType
+  notes String? @db.Text
+  quantity Int
+  price Decimal
+  totalPrice Decimal
+  sourceInventoryId String?
+  reference String?
+  sourceInventory Inventory? @relation(fields: [sourceInventoryId], references: [id], name: "source_inventory_move")
+  destinationInventoryId String?
+  destinationInventory Inventory? @relation(fields: [destinationInventoryId], references: [id], name: "destination_inventory_move")
+  createdById String?
+  createdBy User? @relation(fields: [createdById], references: [id], name: "created_by_inventory_move")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("inventory_moves")
+  InventoryMovementDocument InventoryMovementDocument[]
+}
+
+model InventoryMovementDocument {
+  id        String   @id @default(uuid())
+  movementId String?
+  inventoryMovement InventoryMovement? @relation(fields: [movementId], references: [id])
+  documentType InventoryMovementDocumentType
+  documentUrl String
+  documentName String
+  documentDescription String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("inventory_movement_documents")
+}
+
+model InventoryAlert {
+  id        String   @id @default(uuid())
+  inventoryId String?
+  inventory Inventory? @relation(fields: [inventoryId], references: [id])
+  alertType InventoryAlertType
+  currentQuantity Int
+  minQuantity Int
+  maxQuantity Int
+  difference Int
+  alertDate DateTime
+  alertMessage String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("inventory_alerts")
 }
