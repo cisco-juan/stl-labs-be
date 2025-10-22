@@ -38,6 +38,7 @@ export class BranchesService {
     const { search, status, city, country, sortBy, sortOrder, page, limit } =
       query;
 
+
     // Construir el where dinámico
     const where: Prisma.BranchWhereInput = {};
 
@@ -64,7 +65,7 @@ export class BranchesService {
     }
 
     // Calcular skip para paginación
-    const skip = ((page || 1) - 1) * (limit || 10);
+    const skip = (+(page || 1) - 1) * +(limit || 10);
 
     // Obtener total de registros
     const total = await this.prisma.branch.count({ where });
@@ -73,19 +74,19 @@ export class BranchesService {
     const branches = await this.prisma.branch.findMany({
       where,
       skip,
-      take: limit,
+      take: +(limit || 10),
       orderBy: sortBy
         ? { [String(sortBy)]: sortOrder }
         : undefined,
     });
-    const totalPages = Math.ceil(total / (limit || 10));
-    const hasNextPage = (page || 1) < totalPages;
+    const totalPages = Math.ceil(total / +(limit || 10));
+    const hasNextPage = +(page || 1) < totalPages;
     const hasPreviousPage = (page || 1) > 1;
 
     const meta: PaginationMeta = {
       total,
-      page: page || 1,
-      limit: limit || 10,
+      page: +(page || 1),
+      limit: +(limit || 10),
       totalPages,
       hasNextPage,
       hasPreviousPage,
