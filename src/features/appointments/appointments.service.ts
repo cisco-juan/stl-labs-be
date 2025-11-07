@@ -16,6 +16,9 @@ import {
   ChangeStatusDto,
   AppointmentTypeResponseDto,
   CalendarView,
+  AppointmentStatisticsQueryDto,
+  AppointmentStatisticsResponseDto,
+  StatisticsPeriod,
 } from './dto';
 
 @Injectable()
@@ -798,6 +801,204 @@ export class AppointmentsService {
         // Last day of month
         endDate.setMonth(endDate.getMonth() + 1);
         endDate.setDate(0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+    }
+
+    return { startDate, endDate };
+  }
+
+  /**
+   * Get statistics for appointments
+   */
+  async getStatistics(
+    query: AppointmentStatisticsQueryDto,
+  ): Promise<AppointmentStatisticsResponseDto> {
+    const period = query.period || StatisticsPeriod.MONTH;
+    const { startDate, endDate } = this.getDateRangeForPeriod(period);
+    const { startDate: prevStartDate, endDate: prevEndDate } =
+      this.getPreviousPeriodRange(period, startDate);
+
+    // Get appointments in current period
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        dateTime: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    // Get appointments in previous period for comparison
+    const previousAppointments = await this.prisma.appointment.findMany({
+      where: {
+        dateTime: {
+          gte: prevStartDate,
+          lte: prevEndDate,
+        },
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    const totalAppointments = appointments.length;
+    const previousTotal = previousAppointments.length;
+
+    // Calculate status distribution
+    const statusCounts = new Map<string, number>();
+    appointments.forEach((apt) => {
+      const count = statusCounts.get(apt.status) || 0;
+      statusCounts.set(apt.status, count + 1);
+    });
+
+    const byStatus = Array.from(statusCounts.entries()).map(
+      ([status, count]) => ({
+        status,
+        count,
+        percentage: totalAppointments > 0 ? (count / totalAppointments) * 100 : 0,
+      }),
+    );
+
+    // Calculate comparison with previous period
+    const changePercentage =
+      previousTotal > 0
+        ? ((totalAppointments - previousTotal) / previousTotal) * 100
+        : totalAppointments > 0
+          ? 100
+          : 0;
+
+    let trend: 'up' | 'down' | 'stable' = 'stable';
+    if (Math.abs(changePercentage) >= 5) {
+      trend = changePercentage > 0 ? 'up' : 'down';
+    }
+
+    const comparison = {
+      current: totalAppointments,
+      previous: previousTotal,
+      changePercentage: Math.round(changePercentage * 100) / 100,
+      trend,
+    };
+
+    // Calculate completion and cancellation rates
+    const completedCount =
+      statusCounts.get(AppointmentStatus.COMPLETED) || 0;
+    const canceledCount = statusCounts.get(AppointmentStatus.CANCELED) || 0;
+    const expiredCount = statusCounts.get(AppointmentStatus.EXPIRED) || 0;
+
+    const completionRate =
+      totalAppointments > 0
+        ? Math.round((completedCount / totalAppointments) * 10000) / 100
+        : 0;
+
+    const cancellationRate =
+      totalAppointments > 0
+        ? Math.round(
+            ((canceledCount + expiredCount) / totalAppointments) * 10000,
+          ) / 100
+        : 0;
+
+    // Calculate average per day
+    const daysDiff = Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const averagePerDay =
+      daysDiff > 0
+        ? Math.round((totalAppointments / daysDiff) * 100) / 100
+        : 0;
+
+    return {
+      period,
+      startDate,
+      endDate,
+      totalAppointments,
+      byStatus,
+      comparison,
+      completionRate,
+      cancellationRate,
+      averagePerDay,
+    };
+  }
+
+  /**
+   * Get date range for a given period
+   */
+  private getDateRangeForPeriod(
+    period: StatisticsPeriod,
+  ): { startDate: Date; endDate: Date } {
+    const now = new Date();
+    const startDate = new Date(now);
+    const endDate = new Date(now);
+
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    switch (period) {
+      case StatisticsPeriod.TODAY:
+        // Already set correctly
+        break;
+
+      case StatisticsPeriod.WEEK:
+        const dayOfWeek = startDate.getDay();
+        const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        startDate.setDate(startDate.getDate() + diff);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+
+      case StatisticsPeriod.MONTH:
+        startDate.setDate(1);
+        endDate.setMonth(endDate.getMonth() + 1);
+        endDate.setDate(0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+
+      case StatisticsPeriod.YEAR:
+        startDate.setMonth(0, 1);
+        endDate.setMonth(11, 31);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+    }
+
+    return { startDate, endDate };
+  }
+
+  /**
+   * Get the previous period range based on the current period type
+   */
+  private getPreviousPeriodRange(
+    period: StatisticsPeriod,
+    currentStartDate: Date,
+  ): { startDate: Date; endDate: Date } {
+    const startDate = new Date(currentStartDate);
+    const endDate = new Date(currentStartDate);
+
+    switch (period) {
+      case StatisticsPeriod.TODAY:
+        startDate.setDate(startDate.getDate() - 1);
+        endDate.setDate(endDate.getDate() - 1);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+
+      case StatisticsPeriod.WEEK:
+        startDate.setDate(startDate.getDate() - 7);
+        endDate.setDate(endDate.getDate() - 1);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+
+      case StatisticsPeriod.MONTH:
+        startDate.setMonth(startDate.getMonth() - 1);
+        endDate.setMonth(endDate.getMonth(), 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+
+      case StatisticsPeriod.YEAR:
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        endDate.setFullYear(endDate.getFullYear() - 1);
+        endDate.setMonth(11, 31);
         endDate.setHours(23, 59, 59, 999);
         break;
     }

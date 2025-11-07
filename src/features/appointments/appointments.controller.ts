@@ -30,6 +30,8 @@ import {
   PaginatedAppointmentResponseDto,
   ChangeStatusDto,
   AppointmentTypeResponseDto,
+  AppointmentStatisticsQueryDto,
+  AppointmentStatisticsResponseDto,
 } from './dto';
 
 @ApiTags('Citas')
@@ -76,6 +78,19 @@ export class AppointmentsController {
   })
   async findForCalendar(@Query() query: AppointmentCalendarQueryDto) {
     return this.appointmentsService.findForCalendar(query);
+  }
+
+  @Get('statistics')
+  @ApiOperation({ summary: 'Obtener estadísticas de citas por período' })
+  @ApiResponse({
+    status: 200,
+    description: 'Estadísticas de citas con comparación de períodos',
+    type: AppointmentStatisticsResponseDto,
+  })
+  async getStatistics(
+    @Query() query: AppointmentStatisticsQueryDto,
+  ): Promise<AppointmentStatisticsResponseDto> {
+    return this.appointmentsService.getStatistics(query);
   }
 
   @Get('pending')

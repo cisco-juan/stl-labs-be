@@ -7,3 +7,5 @@ export * from './appointment-calendar-query.dto';
 export * from './appointment-response.dto';
 export * from './paginated-appointment-response.dto';
 export * from './appointment-type-response.dto';
+export * from './appointment-statistics-query.dto';
+export * from './appointment-statistics-response.dto';
