@@ -55,7 +55,7 @@ export class SpecializationsService {
       this.prisma.specialization.findMany({
         where,
         skip,
-        take: limit,
+        take: +(limit || 10),
         orderBy: {
           [String(sortBy)]: sortOrder,
         },

@@ -39,10 +39,7 @@ export class SpecializationQueryDto {
     default: 1,
   })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+  page?: string = '1';
 
   @ApiPropertyOptional({
     description: 'Cantidad de registros por página',
@@ -51,8 +48,5 @@ export class SpecializationQueryDto {
     default: 10,
   })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 10;
+  limit?: string = '10';
 }
