@@ -160,6 +160,29 @@ enum DniType {
   OTHER
 }
 
+enum DentalPieceStatus {
+  SANO
+  CARIES
+  OBTURADO
+  CORONA
+  PUENTE
+  ENDODONCIA
+  EXTRACCION
+  AUSENTE
+  IMPLANTE
+  FRACTURADO
+  OTHER
+}
+
+enum DentalSurfaceType {
+  OCLUSAL
+  MESIAL
+  DISTAL
+  VESTIBULAR
+  LINGUAL
+  PALATINO
+}
+
 enum Language {
   ENGLISH
   SPANISH
@@ -254,9 +277,11 @@ model User {
 
 model Patient {
   id        String   @id @default(uuid())
+  code      String?  @unique
   fullName  String
   email     String   @unique
   phoneNumber String?
+  secondaryPhoneNumber String?
   dni String?
   dniType DniType?
   birthDate DateTime?
@@ -264,6 +289,10 @@ model Patient {
   civilStatus CivilStatus? @default(SINGLE)
   profession String?
   address String?
+  city String?
+  hasDentalInsurance Boolean @default(false)
+  referralSource String?
+  notes String? @db.Text
   status    UserStatus @default(ACTIVE)
   doctorId String?
   gender    Gender
@@ -277,6 +306,9 @@ model Patient {
   Appointment Appointment[]
   Treatment Treatment[]
   Invoice Invoice[] @relation(name: "patient_invoice")
+  MedicalHistory MedicalHistory?
+  Odontogram Odontogram?
+  PatientDocument PatientDocument[]
 }
 
 model PatientEmergencyContact {
@@ -665,3 +697,93 @@ model BusinessHours {
   @@unique([clinicSettingsId, dayOfWeek])
   @@map("business_hours")
 }
+
+// Patient Medical Records Models
+
+model MedicalHistory {
+  id                  String   @id @default(uuid())
+  patientId           String   @unique
+  patient             Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  allergies           String[] // Array of allergies
+  currentMedications  String[] // Array of current medications
+  chronicConditions   String?  @db.Text // Chronic medical conditions
+  familyHistory       String?  @db.Text // Family medical history
+  habits              String?  @db.Text // Smoking, alcohol, etc.
+  previousSurgeries   String?  @db.Text // Previous surgeries
+  consultationReason  String?  @db.Text // Reason for consultation
+  observations        String?  @db.Text // Additional observations
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("medical_histories")
+}
+
+model Odontogram {
+  id            String        @id @default(uuid())
+  patientId     String        @unique
+  patient       Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  observations  String?       @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  dentalPieces  DentalPiece[]
+
+  @@map("odontograms")
+}
+
+model DentalPiece {
+  id            String              @id @default(uuid())
+  odontogramId  String
+  odontogram    Odontogram          @relation(fields: [odontogramId], references: [id], onDelete: Cascade)
+  pieceNumber   String              // FDI notation: 11-48 (adult), 51-85 (deciduous)
+  status        DentalPieceStatus   @default(SANO)
+  notes         String?             @db.Text
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  surfaces      DentalSurface[]
+
+  @@unique([odontogramId, pieceNumber])
+  @@map("dental_pieces")
+}
+
+model DentalSurface {
+  id              String            @id @default(uuid())
+  dentalPieceId   String
+  dentalPiece     DentalPiece       @relation(fields: [dentalPieceId], references: [id], onDelete: Cascade)
+  surfaceType     DentalSurfaceType
+  hasCondition    Boolean           @default(false)
+  condition       String?           // Description of condition (e.g., "caries", "obturación amalgama")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([dentalPieceId, surfaceType])
+  @@map("dental_surfaces")
+}
+
+model PatientDocument {
+  id          String   @id @default(uuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileKey     String   // S3 key or local file path
+  fileUrl     String?  // Public URL if needed
+  mimeType    String
+  fileSize    Int      // Size in bytes
+  description String?
+  uploadedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("patient_documents")
+}
+
+// TODO: Migrate document storage to AWS S3
+// Current implementation uses local file storage simulation
+// Steps for S3 migration:
+// 1. Set up AWS SDK and configure credentials
+// 2. Create S3 bucket with proper CORS and policies
+// 3. Update DocumentStorageService to use S3 SDK
+// 4. Implement presigned URLs for secure downloads
+// 5. Set up lifecycle policies for document retention
+// 6. Migrate existing local files to S3

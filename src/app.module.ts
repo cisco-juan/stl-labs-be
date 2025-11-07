@@ -6,6 +6,7 @@ import { BranchesModule } from './features/branches/branches.module';
 import { UsersModule } from './features/users/users.module';
 import { SpecializationsModule } from './features/specializations/specializations.module';
 import { SettingsModule } from './features/settings/settings.module';
+import { PatientsModule } from './features/patients/patients.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { PrismaModule } from './prisma/prisma.module';
     UsersModule,
     SpecializationsModule,
     SettingsModule,
+    PatientsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
