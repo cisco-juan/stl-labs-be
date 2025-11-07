@@ -370,8 +370,10 @@ model Treatment {
   updatedAt DateTime @updatedAt
   status TreatmentStatus @default(PENDING)
   diagnosis String? @db.Text
+  prognosis String? @db.Text
   startDate DateTime?
   endDate DateTime?
+  validityDate DateTime?
   treatment_appointments Appointment[] @relation(name: "treatment_appointment")
   patientId String?
   patient Patient? @relation(fields: [patientId], references: [id])
@@ -389,12 +391,77 @@ model Treatment {
   paymentDate DateTime?
   paymentMethod PaymentMethod?
   discount Decimal @default(0)
+  discountPercentage Decimal @default(0)
 
   @@map("treatments")
 
   TreatmentStep TreatmentStep[]
+  PaymentPlan PaymentPlan[]
 
   treatment_invoices Invoice[] @relation(name: "treatment_invoice")
+}
+
+model TreatmentCategory {
+  id        String   @id @default(uuid())
+  name      String
+  description String?
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("treatment_categories")
+
+  TreatmentCatalog TreatmentCatalog[]
+}
+
+model TreatmentCatalog {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  description String? @db.Text
+  categoryId String?
+  category TreatmentCategory? @relation(fields: [categoryId], references: [id])
+  basePrice Decimal @default(0)
+  estimatedDuration Int @default(0)
+  requiresAnesthesia Boolean @default(false)
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("treatment_catalog")
+
+  TreatmentStep TreatmentStep[]
+}
+
+model PaymentPlan {
+  id        String   @id @default(uuid())
+  treatmentId String
+  treatment Treatment @relation(fields: [treatmentId], references: [id])
+  numberOfInstallments Int
+  installmentAmount Decimal
+  initialPayment Decimal @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payment_plans")
+
+  PaymentInstallment PaymentInstallment[]
+}
+
+model PaymentInstallment {
+  id        String   @id @default(uuid())
+  paymentPlanId String
+  paymentPlan PaymentPlan @relation(fields: [paymentPlanId], references: [id])
+  installmentNumber Int
+  amount Decimal
+  dueDate DateTime
+  paidDate DateTime?
+  isPaid Boolean @default(false)
+  paymentMethod PaymentMethod?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payment_installments")
 }
 
 model TreatmentStep {
@@ -404,8 +471,11 @@ model TreatmentStep {
   description String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  completedAt DateTime?
   treatmentId String?
   treatment Treatment? @relation(fields: [treatmentId], references: [id])
+  catalogTreatmentId String?
+  catalogTreatment TreatmentCatalog? @relation(fields: [catalogTreatmentId], references: [id])
   notes String? @db.Text
   quantity Int @default(1)
   price Decimal @default(0)
@@ -414,7 +484,9 @@ model TreatmentStep {
   paymentDate DateTime?
   paymentMethod PaymentMethod?
   discount Decimal @default(0)
+  discountPercentage Decimal @default(0)
   order Int @default(0)
+  toothNumber String?
   doctor User? @relation(fields: [doctorId], references: [id], name: "doctor_treatment_step")
   createdById String?
   createdBy User? @relation(fields: [createdById], references: [id], name: "created_by_treatment_step")

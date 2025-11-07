@@ -439,6 +439,92 @@ async function main() {
   ]);
   console.log(`✅ Created ${appointmentTypes.length} appointment types`);
 
+  // Create Treatment Categories
+  console.log('🏷️ Creating treatment categories...');
+  const treatmentCategories = await Promise.all([
+    prisma.treatmentCategory.upsert({
+      where: { id: 'tcat-1' },
+      update: {},
+      create: {
+        id: 'tcat-1',
+        name: 'Odontología General',
+        description: 'Tratamientos básicos de odontología general y preventiva',
+        isActive: true,
+      },
+    }),
+    prisma.treatmentCategory.upsert({
+      where: { id: 'tcat-2' },
+      update: {},
+      create: {
+        id: 'tcat-2',
+        name: 'Ortodoncia',
+        description: 'Tratamientos de corrección de malposiciones dentarias',
+        isActive: true,
+      },
+    }),
+    prisma.treatmentCategory.upsert({
+      where: { id: 'tcat-3' },
+      update: {},
+      create: {
+        id: 'tcat-3',
+        name: 'Endodoncia',
+        description: 'Tratamientos de conductos radiculares',
+        isActive: true,
+      },
+    }),
+    prisma.treatmentCategory.upsert({
+      where: { id: 'tcat-4' },
+      update: {},
+      create: {
+        id: 'tcat-4',
+        name: 'Periodoncia',
+        description: 'Tratamientos de enfermedades de las encías',
+        isActive: true,
+      },
+    }),
+    prisma.treatmentCategory.upsert({
+      where: { id: 'tcat-5' },
+      update: {},
+      create: {
+        id: 'tcat-5',
+        name: 'Cirugía Oral',
+        description: 'Procedimientos quirúrgicos orales y maxilofaciales',
+        isActive: true,
+      },
+    }),
+    prisma.treatmentCategory.upsert({
+      where: { id: 'tcat-6' },
+      update: {},
+      create: {
+        id: 'tcat-6',
+        name: 'Prostodoncia',
+        description: 'Prótesis dentales y rehabilitación oral',
+        isActive: true,
+      },
+    }),
+    prisma.treatmentCategory.upsert({
+      where: { id: 'tcat-7' },
+      update: {},
+      create: {
+        id: 'tcat-7',
+        name: 'Estética Dental',
+        description: 'Tratamientos estéticos y blanqueamiento dental',
+        isActive: true,
+      },
+    }),
+    prisma.treatmentCategory.upsert({
+      where: { id: 'tcat-8' },
+      update: {},
+      create: {
+        id: 'tcat-8',
+        name: 'Odontopediatría',
+        description: 'Tratamientos dentales para niños',
+        isActive: true,
+      },
+    }),
+  ]);
+  console.log(`✅ Created ${treatmentCategories.length} treatment categories`);
+
   // Create Clinic Settings
   console.log('⚙️ Creating clinic settings...');
   const clinicSettings = await prisma.clinicSettings.upsert({
