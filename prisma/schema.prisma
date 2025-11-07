@@ -160,6 +160,21 @@ enum DniType {
   OTHER
 }
 
+enum Language {
+  ENGLISH
+  SPANISH
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 enum BranchStatus {
   ACTIVE
   INACTIVE
@@ -219,6 +234,7 @@ model User {
   address String?
   profilePictureUrl String?
   defaultBranchId String?
+  preferredLanguage Language?
   specialization Specialization? @relation(fields: [specializationId], references: [id])
   defaultBranch Branch? @relation(fields: [defaultBranchId], references: [id], name: "default_branch")
 
@@ -555,4 +571,97 @@ model InventoryAlert {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@map("inventory_alerts")
+}
+
+// Settings and Configuration Models
+
+model Currency {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  symbol    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("currencies")
+  ClinicSettings ClinicSettings[]
+}
+
+model Timezone {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  name          String
+  offsetHours   Int
+  offsetMinutes Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("timezones")
+  ClinicSettings ClinicSettings[]
+}
+
+model DateFormat {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  format    String
+  example   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("date_formats")
+  ClinicSettings ClinicSettings[]
+}
+
+model TimeFormat {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  format    String
+  example   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("time_formats")
+  ClinicSettings ClinicSettings[]
+}
+
+model ClinicSettings {
+  id               String   @id @default(uuid())
+  name             String
+  legalName        String?
+  taxId            String?
+  mainPhone        String?
+  email            String?
+  website          String?
+  address          String?  @db.Text
+  defaultLanguage  Language @default(SPANISH)
+  defaultTimezoneId String?
+  defaultCurrencyId String?
+  dateFormatId     String?
+  timeFormatId     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  defaultTimezone  Timezone?    @relation(fields: [defaultTimezoneId], references: [id])
+  defaultCurrency  Currency?    @relation(fields: [defaultCurrencyId], references: [id])
+  dateFormat       DateFormat?  @relation(fields: [dateFormatId], references: [id])
+  timeFormat       TimeFormat?  @relation(fields: [timeFormatId], references: [id])
+
+  @@map("clinic_settings")
+  businessHours    BusinessHours[]
+}
+
+model BusinessHours {
+  id               String         @id @default(uuid())
+  clinicSettingsId String
+  dayOfWeek        DayOfWeek
+  isOpen           Boolean        @default(true)
+  openTime         String?
+  closeTime        String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  clinicSettings   ClinicSettings @relation(fields: [clinicSettingsId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicSettingsId, dayOfWeek])
+  @@map("business_hours")
 }
