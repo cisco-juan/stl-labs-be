@@ -24,7 +24,7 @@ import { UsersService } from './users.service';
 import {
   CreateUserDto,
   UpdateUserDto,
-  UserResponseDto,
+  UserResponseDtoUser,
   UserQueryDto,
   PaginatedUserResponseDto,
   ChangePasswordDto,
@@ -48,7 +48,7 @@ export class UsersController {
   @ApiResponse({
     status: 201,
     description: 'Usuario creado exitosamente',
-    type: UserResponseDto,
+    type: UserResponseDtoUser,
   })
   @ApiResponse({
     status: 400,
@@ -60,7 +60,7 @@ export class UsersController {
   })
   async create(
     @Body() createUserDto: CreateUserDto,
-  ): Promise<UserResponseDto> {
+  ): Promise<UserResponseDtoUser> {
     return this.usersService.create(createUserDto);
   }
 
@@ -114,7 +114,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Usuario actualizado exitosamente',
-    type: UserResponseDto,
+    type: UserResponseDtoUser,
   })
   @ApiResponse({
     status: 404,
@@ -127,7 +127,7 @@ export class UsersController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
+  ): Promise<UserResponseDtoUser> {
     return this.usersService.update(id, updateUserDto);
   }
 
@@ -142,7 +142,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Usuario eliminado exitosamente',
-    type: UserResponseDto,
+    type: UserResponseDtoUser,
   })
   @ApiResponse({
     status: 404,
@@ -150,7 +150,7 @@ export class UsersController {
   })
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<UserResponseDto> {
+  ): Promise<UserResponseDtoUser> {
     return this.usersService.remove(id);
   }
 
@@ -217,7 +217,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Estado actualizado exitosamente',
-    type: UserResponseDto,
+    type: UserResponseDtoUser,
   })
   @ApiResponse({
     status: 404,
@@ -226,7 +226,7 @@ export class UsersController {
   async changeStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() changeStatusDto: ChangeStatusDto,
-  ): Promise<UserResponseDto> {
+  ): Promise<UserResponseDtoUser> {
     return this.usersService.changeStatus(id, changeStatusDto);
   }
 
@@ -328,7 +328,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Sucursal por defecto actualizada exitosamente',
-    type: UserResponseDto,
+    type: UserResponseDtoUser,
   })
   @ApiResponse({
     status: 400,
@@ -341,7 +341,7 @@ export class UsersController {
   async setDefaultBranch(
     @Param('id', ParseUUIDPipe) userId: string,
     @Body() setDefaultBranchDto: SetDefaultBranchDto,
-  ): Promise<UserResponseDto> {
+  ): Promise<UserResponseDtoUser> {
     return this.usersService.setDefaultBranch(userId, setDefaultBranchDto);
   }
 }

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserResponseDto } from './user-response.dto';
+import { UserResponseDtoUser } from './user-response.dto';
 
 export class BranchBasicDto {
   @ApiProperty({
@@ -27,7 +27,7 @@ export class BranchBasicDto {
   city?: string;
 }
 
-export class UserWithBranchesDto extends UserResponseDto {
+export class UserWithBranchesDto extends UserResponseDtoUser {
   @ApiProperty({
     type: [BranchBasicDto],
     description: 'Lista de sucursales asignadas al usuario',

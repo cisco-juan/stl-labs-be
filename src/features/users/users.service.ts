@@ -10,7 +10,7 @@ import {
   CreateUserDto,
   UpdateUserDto,
   UserQueryDto,
-  UserResponseDto,
+  UserResponseDtoUser,
   PaginatedUserResponseDto,
   PaginationMeta,
   ChangePasswordDto,
@@ -28,7 +28,7 @@ import * as bcrypt from 'bcrypt';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  async create(createUserDto: CreateUserDto): Promise<UserResponseDtoUser> {
     // Validar que el email sea único
     await this.validateUniqueEmail(createUserDto.email);
 
@@ -112,7 +112,7 @@ export class UsersService {
     const users = await this.prisma.user.findMany({
       where,
       skip,
-      take: limit,
+      take: +(limit || 10),
       orderBy: {
         [String(sortBy)]: sortOrder,
       },
@@ -183,7 +183,7 @@ export class UsersService {
   async update(
     id: string,
     updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
+  ): Promise<UserResponseDtoUser> {
     // Verificar que el usuario existe
     await this.findOne(id);
 
@@ -209,7 +209,7 @@ export class UsersService {
     return this.mapToUserResponse(user);
   }
 
-  async remove(id: string): Promise<UserResponseDto> {
+  async remove(id: string): Promise<UserResponseDtoUser> {
     // Verificar que el usuario existe
     await this.findOne(id);
 
@@ -286,7 +286,7 @@ export class UsersService {
   async changeStatus(
     id: string,
     changeStatusDto: ChangeStatusDto,
-  ): Promise<UserResponseDto> {
+  ): Promise<UserResponseDtoUser> {
     // Verificar que el usuario exists
     await this.findOne(id);
 
@@ -429,7 +429,7 @@ export class UsersService {
   async setDefaultBranch(
     userId: string,
     setDefaultBranchDto: SetDefaultBranchDto,
-  ): Promise<UserResponseDto> {
+  ): Promise<UserResponseDtoUser> {
     // Verificar que el usuario existe
     await this.findOne(userId);
 
@@ -510,7 +510,7 @@ export class UsersService {
   }
 
   // Método privado para mapear a UserResponseDto (sin password)
-  private mapToUserResponse(user: any): UserResponseDto {
+  private mapToUserResponse(user: any): UserResponseDtoUser {
     return {
       id: user.id,
       email: user.email,

@@ -94,11 +94,8 @@ export class UserQueryDto {
     minimum: 1,
     default: 1,
   })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
   @IsOptional()
-  page?: number = 1;
+  page?: string = '1';
 
   @ApiPropertyOptional({
     example: 10,
@@ -107,10 +104,6 @@ export class UserQueryDto {
     maximum: 100,
     default: 10,
   })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
   @IsOptional()
-  limit?: number = 10;
+  limit?: string = '10';
 }

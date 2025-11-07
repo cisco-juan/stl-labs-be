@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole, UserStatus, Gender } from '@prisma/client';
 
-export class UserResponseDto {
+
+
+export class UserResponseDtoUser {
   @ApiProperty({
     example: '123e4567-e89b-12d3-a456-426614174000',
     description: 'ID único del usuario',

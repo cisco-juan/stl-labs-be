@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserResponseDto } from './user-response.dto';
+import { UserResponseDtoUser } from './user-response.dto';
 
 export class PaginationMeta {
   @ApiProperty({ example: 100, description: 'Total de registros' })
@@ -23,10 +23,10 @@ export class PaginationMeta {
 
 export class PaginatedUserResponseDto {
   @ApiProperty({
-    type: [UserResponseDto],
+    type: [UserResponseDtoUser],
     description: 'Lista de usuarios',
   })
-  data: UserResponseDto[];
+  data: UserResponseDtoUser[];
 
   @ApiProperty({
     type: PaginationMeta,
