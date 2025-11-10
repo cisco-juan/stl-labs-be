@@ -33,6 +33,9 @@ import {
   UpdateInvoiceDto,
   ChangeInvoiceStatusDto,
   CreatePaymentDto,
+  InvoiceStatisticsDto,
+  PaymentStatisticsDto,
+  AccountsReceivableStatisticsDto,
 } from './dto';
 
 @ApiTags('Facturación')
@@ -305,6 +308,41 @@ export class BillingController {
     }
 
     res.end();
+  }
+
+  // ==================== STATISTICS ====================
+
+  @Get('statistics/invoices')
+  @ApiOperation({ summary: 'Obtener estadísticas de facturas' })
+  @ApiResponse({
+    status: 200,
+    description: 'Estadísticas de facturas obtenidas exitosamente',
+    type: InvoiceStatisticsDto,
+  })
+  async getInvoiceStatistics(): Promise<InvoiceStatisticsDto> {
+    return this.billingService.getInvoiceStatistics();
+  }
+
+  @Get('statistics/payments')
+  @ApiOperation({ summary: 'Obtener estadísticas de pagos' })
+  @ApiResponse({
+    status: 200,
+    description: 'Estadísticas de pagos obtenidas exitosamente',
+    type: PaymentStatisticsDto,
+  })
+  async getPaymentStatistics(): Promise<PaymentStatisticsDto> {
+    return this.billingService.getPaymentStatistics();
+  }
+
+  @Get('statistics/accounts-receivable')
+  @ApiOperation({ summary: 'Obtener estadísticas de cuentas por cobrar' })
+  @ApiResponse({
+    status: 200,
+    description: 'Estadísticas de cuentas por cobrar obtenidas exitosamente',
+    type: AccountsReceivableStatisticsDto,
+  })
+  async getAccountsReceivableStatistics(): Promise<AccountsReceivableStatisticsDto> {
+    return this.billingService.getAccountsReceivableStatistics();
   }
 }
 

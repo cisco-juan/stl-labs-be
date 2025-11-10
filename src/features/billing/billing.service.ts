@@ -21,6 +21,9 @@ import {
   UpdateInvoiceDto,
   ChangeInvoiceStatusDto,
   CreatePaymentDto,
+  InvoiceStatisticsDto,
+  PaymentStatisticsDto,
+  AccountsReceivableStatisticsDto,
 } from './dto';
 import { PdfGeneratorService } from './services/pdf-generator.service';
 
@@ -1441,6 +1444,214 @@ export class BillingService {
       LOW: 'Baja',
     };
     return translations[priority] || priority;
+  }
+
+  // ==================== STATISTICS ====================
+
+  /**
+   * Gets invoice statistics
+   */
+  async getInvoiceStatistics(): Promise<InvoiceStatisticsDto> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        status: { not: InvoiceStatus.DELETED },
+      },
+    });
+
+    const totalInvoiced = invoices.reduce(
+      (sum, inv) => sum + Number(inv.totalAmount),
+      0,
+    );
+    const totalCollected = invoices.reduce(
+      (sum, inv) => sum + Number(inv.paidAmount),
+      0,
+    );
+    const totalToCollect = totalInvoiced - totalCollected;
+
+    const now = new Date();
+    const overdueInvoices = invoices.filter((inv) => {
+      if (!inv.expiresAt) return false;
+      const expiresAt = new Date(inv.expiresAt);
+      return (
+        expiresAt < now &&
+        inv.status !== InvoiceStatus.PAID &&
+        inv.status !== InvoiceStatus.CANCELED
+      );
+    }).length;
+
+    const pendingInvoices = invoices.filter(
+      (inv) =>
+        inv.status !== InvoiceStatus.PAID &&
+        inv.status !== InvoiceStatus.CANCELED &&
+        inv.status !== InvoiceStatus.DELETED,
+    ).length;
+
+    const collectedPercentage =
+      totalInvoiced > 0 ? (totalCollected / totalInvoiced) * 100 : 0;
+
+    return {
+      totalInvoiced,
+      totalInvoices: invoices.length,
+      totalCollected,
+      collectedPercentage: Number(collectedPercentage.toFixed(2)),
+      totalToCollect,
+      pendingInvoices,
+      overdueInvoices,
+    };
+  }
+
+  /**
+   * Gets payment statistics
+   */
+  async getPaymentStatistics(): Promise<PaymentStatisticsDto> {
+    const payments = await this.prisma.payment.findMany({
+      where: {
+        status: PaymentStatus.PAID,
+      },
+    });
+
+    const totalPayments = payments.reduce(
+      (sum, pay) => sum + Number(pay.amount),
+      0,
+    );
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const paymentsToday = payments.filter((pay) => {
+      const paymentDate = pay.paymentDate || pay.createdAt;
+      const date = new Date(paymentDate);
+      return date >= today && date < tomorrow;
+    });
+
+    const cashPayments = payments
+      .filter((pay) => pay.paymentMethod === 'CASH')
+      .reduce((sum, pay) => sum + Number(pay.amount), 0);
+
+    return {
+      totalPayments,
+      paymentsToday: paymentsToday.length,
+      cashPayments,
+      totalTransactions: payments.length,
+    };
+  }
+
+  /**
+   * Gets accounts receivable statistics
+   */
+  async getAccountsReceivableStatistics(): Promise<AccountsReceivableStatisticsDto> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        status: {
+          notIn: [InvoiceStatus.PAID, InvoiceStatus.DELETED, InvoiceStatus.CANCELED],
+        },
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    const now = new Date();
+    let totalToCollect = 0;
+    const patientSet = new Set<string>();
+
+    const agingAnalysis = {
+      days0to15: 0,
+      days16to30: 0,
+      days31to60: 0,
+      daysOver60: 0,
+    };
+
+    for (const invoice of invoices) {
+      const total = Number(invoice.totalAmount);
+      const paid = Number(invoice.paidAmount);
+      const balance = total - paid;
+
+      if (balance <= 0) continue;
+
+      totalToCollect += balance;
+
+      if (invoice.patientId) {
+        patientSet.add(invoice.patientId);
+      }
+
+      // Calculate days overdue
+      const expiresAt = invoice.expiresAt ? new Date(invoice.expiresAt) : null;
+      const daysOverdue = expiresAt
+        ? Math.max(
+            0,
+            Math.floor((now.getTime() - expiresAt.getTime()) / (1000 * 60 * 60 * 24)),
+          )
+        : 0;
+
+      // Calculate aging analysis
+      if (expiresAt) {
+        if (daysOverdue <= 15) {
+          agingAnalysis.days0to15 += balance;
+        } else if (daysOverdue <= 30) {
+          agingAnalysis.days16to30 += balance;
+        } else if (daysOverdue <= 60) {
+          agingAnalysis.days31to60 += balance;
+        } else {
+          agingAnalysis.daysOver60 += balance;
+        }
+      } else {
+        // If no expiration date, consider it as 0-15 days
+        agingAnalysis.days0to15 += balance;
+      }
+    }
+
+    // Count unique overdue patients
+    const overduePatients = new Set<string>();
+    for (const invoice of invoices) {
+      if (!invoice.patientId || !invoice.expiresAt) continue;
+      const expiresAt = new Date(invoice.expiresAt);
+      if (expiresAt < now) {
+        const total = Number(invoice.totalAmount);
+        const paid = Number(invoice.paidAmount);
+        const balance = total - paid;
+        if (balance > 0) {
+          overduePatients.add(invoice.patientId);
+        }
+      }
+    }
+
+    // Count unique high priority patients
+    const highPriorityPatients = new Set<string>();
+    for (const invoice of invoices) {
+      if (!invoice.patientId || !invoice.expiresAt) continue;
+      const expiresAt = new Date(invoice.expiresAt);
+      const daysOverdue = Math.max(
+        0,
+        Math.floor((now.getTime() - expiresAt.getTime()) / (1000 * 60 * 60 * 24)),
+      );
+      if (daysOverdue > 30) {
+        const total = Number(invoice.totalAmount);
+        const paid = Number(invoice.paidAmount);
+        const balance = total - paid;
+        if (balance > 0) {
+          highPriorityPatients.add(invoice.patientId);
+        }
+      }
+    }
+
+    const averageDebtPerClient =
+      patientSet.size > 0 ? totalToCollect / patientSet.size : 0;
+
+    return {
+      totalToCollect,
+      totalAccounts: patientSet.size,
+      overdueAccounts: overduePatients.size,
+      highPriorityAccounts: highPriorityPatients.size,
+      averageDebtPerClient: Number(averageDebtPerClient.toFixed(2)),
+      agingAnalysis,
+    };
   }
 
   /**

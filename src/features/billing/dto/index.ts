@@ -12,4 +12,7 @@ export * from './create-invoice-item.dto';
 export * from './update-invoice.dto';
 export * from './change-invoice-status.dto';
 export * from './create-payment.dto';
+export * from './invoice-statistics.dto';
+export * from './payment-statistics.dto';
+export * from './accounts-receivable-statistics.dto';
 
