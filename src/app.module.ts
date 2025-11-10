@@ -14,6 +14,7 @@ import { TreatmentCatalogModule } from './features/treatment-catalog/treatment-c
 import { TreatmentsModule } from './features/treatments/treatments.module';
 import { TreatmentStepsModule } from './features/treatment-steps/treatment-steps.module';
 import { PaymentPlansModule } from './features/payment-plans/payment-plans.module';
+import { BillingModule } from './features/billing/billing.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -32,6 +33,7 @@ import { PrismaModule } from './prisma/prisma.module';
     TreatmentsModule,
     TreatmentStepsModule,
     PaymentPlansModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
